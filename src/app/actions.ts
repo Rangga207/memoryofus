@@ -19,11 +19,14 @@ const dbPath = path.join(process.cwd(), 'database.json');
 async function getDb(): Promise<Memory[]> {
     noStore(); // Completely bypass Next.js aggressive caching for file reads!
     
-    // 1. ONLINE PERSISTENCE: If Vercel KV is configured, use it!
-    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+    // 1. ONLINE PERSISTENCE: If Vercel/Upstash KV is configured, use it!
+    const kvUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+    const kvToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+    
+    if (kvUrl && kvToken) {
         try {
-            const res = await fetch(`${process.env.KV_REST_API_URL}/get/memories`, {
-                headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}` },
+            const res = await fetch(`${kvUrl}/get/memories`, {
+                headers: { Authorization: `Bearer ${kvToken}` },
                 cache: 'no-store'
             });
             const json = await res.json();
@@ -48,13 +51,16 @@ async function getDb(): Promise<Memory[]> {
 }
 
 async function saveDb(memories: Memory[]) {
-    // 1. ONLINE PERSISTENCE: If Vercel KV is configured, use it!
-    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+    // 1. ONLINE PERSISTENCE: If Vercel/Upstash KV is configured, use it!
+    const kvUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+    const kvToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+
+    if (kvUrl && kvToken) {
         try {
-            await fetch(`${process.env.KV_REST_API_URL}/set/memories`, {
+            await fetch(`${kvUrl}/set/memories`, {
                 method: 'POST',
                 headers: { 
-                    Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`,
+                    Authorization: `Bearer ${kvToken}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(memories)

@@ -59,7 +59,7 @@ export default function HomePage() {
               transition={{ duration: 0.8, ease: 'easeOut' }}
             >
               <motion.div
-                className="flex flex-col items-center justify-center pt-8 sm:pt-10"
+                className="flex flex-col items-center justify-center"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 1.5, ease: 'easeOut' }}
