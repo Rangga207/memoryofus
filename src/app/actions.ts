@@ -18,6 +18,26 @@ const dbPath = path.join(process.cwd(), 'database.json');
 
 async function getDb(): Promise<Memory[]> {
     noStore(); // Completely bypass Next.js aggressive caching for file reads!
+    
+    // 1. ONLINE PERSISTENCE: If Vercel KV is configured, use it!
+    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+        try {
+            const res = await fetch(`${process.env.KV_REST_API_URL}/get/memories`, {
+                headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}` },
+                cache: 'no-store'
+            });
+            const json = await res.json();
+            if (json.result) {
+                const data = typeof json.result === 'string' ? JSON.parse(json.result) : json.result;
+                return Array.isArray(data) ? data : [];
+            }
+            return [];
+        } catch (e) {
+            console.error("Vercel KV Read Error:", e);
+        }
+    }
+
+    // 2. LOCAL DEV FALLBACK: Write to local json file
     try {
         const data = await fs.readFile(dbPath, 'utf8');
         return JSON.parse(data);
@@ -28,6 +48,24 @@ async function getDb(): Promise<Memory[]> {
 }
 
 async function saveDb(memories: Memory[]) {
+    // 1. ONLINE PERSISTENCE: If Vercel KV is configured, use it!
+    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+        try {
+            await fetch(`${process.env.KV_REST_API_URL}/set/memories`, {
+                method: 'POST',
+                headers: { 
+                    Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(memories)
+            });
+            return;
+        } catch (e) {
+            console.error("Vercel KV Write Error:", e);
+        }
+    }
+
+    // 2. LOCAL DEV FALLBACK: Write to local json file
     await fs.writeFile(dbPath, JSON.stringify(memories, null, 2), 'utf8');
 }
 
