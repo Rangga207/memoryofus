@@ -75,7 +75,7 @@ export default function HomePage() {
 
                 {/* Starry Text */}
                 <motion.p
-                  className="flex items-center gap-3 text-white/40 text-xs sm:text-[13px] font-light tracking-[0.2em] uppercase max-w-md mx-auto"
+                  className="flex items-center justify-center gap-3 text-white/40 text-[11px] sm:text-[13px] font-light tracking-[0.2em] uppercase w-full max-w-2xl mx-auto"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6, duration: 1.8, ease: 'easeOut' }}

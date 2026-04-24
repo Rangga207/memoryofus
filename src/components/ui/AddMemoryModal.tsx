@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Plus, X, Image as ImageIcon } from 'lucide-react';
 
 interface AddMemoryModalProps {
     onAdd: (data: { title: string; content: string; imageUrl?: string }) => Promise<void> | void;
@@ -101,7 +101,6 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
                             <div className="sm:hidden w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
                             <div className="flex items-center justify-between mb-5">
                                 <div className="flex items-center gap-2">
-                                    <Sparkles size={18} className="text-pink-400" />
                                     <h2 className="font-serif text-lg font-semibold text-white">New Memory</h2>
                                 </div>
                                 <button
