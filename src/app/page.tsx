@@ -68,7 +68,7 @@ export default function HomePage() {
                 <div className="flex items-center gap-4 mb-5 opacity-80">
                   <div className="w-16 sm:w-32 h-[1px] bg-gradient-to-r from-transparent to-white/30" />
                   <span className="text-[9px] sm:text-[11px] uppercase tracking-[0.5em] text-white/80 font-light ml-[0.25em]">
-                    Final Chapter
+                    Final Chaptercj
                   </span>
                   <div className="w-16 sm:w-32 h-[1px] bg-gradient-to-l from-transparent to-white/30" />
                 </div>
