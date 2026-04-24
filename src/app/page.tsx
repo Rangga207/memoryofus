@@ -33,7 +33,7 @@ export default function HomePage() {
     await removeMemory(id);
   };
 
-    return (
+  return (
     <main className="relative min-h-[100dvh]">
       {/* 3D Background */}
       <ErrorBoundary>
@@ -59,26 +59,32 @@ export default function HomePage() {
               transition={{ duration: 0.8, ease: 'easeOut' }}
             >
               <motion.div
-                className="flex items-center justify-center mb-1"
+                className="flex flex-col items-center justify-center pt-8 sm:pt-10"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 1.2, ease: 'easeOut' }}
+                transition={{ delay: 0.3, duration: 1.5, ease: 'easeOut' }}
               >
-                <span className="text-[10px] sm:text-xs uppercase tracking-[0.5em] text-slate-300/40 font-light">
-                  Final Chapter
-                </span>
+                {/* Celestial Orbit Divider */}
+                <div className="flex items-center gap-4 mb-5 opacity-80">
+                  <div className="w-16 sm:w-32 h-[1px] bg-gradient-to-r from-transparent to-white/30" />
+                  <span className="text-[9px] sm:text-[11px] uppercase tracking-[0.5em] text-white/80 font-light ml-[0.25em]">
+                    Final Chapter
+                  </span>
+                  <div className="w-16 sm:w-32 h-[1px] bg-gradient-to-l from-transparent to-white/30" />
+                </div>
+
+                {/* Starry Text */}
+                <motion.p
+                  className="flex items-center gap-3 text-white/40 text-xs sm:text-[13px] font-light tracking-[0.2em] uppercase max-w-md mx-auto"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6, duration: 1.8, ease: 'easeOut' }}
+                >
+                  <span className="text-white/20 text-[10px]">✧</span>
+                  <span className="text-center">Some endings are necessary for us to grow</span>
+                  <span className="text-white/20 text-[10px]">✧</span>
+                </motion.p>
               </motion.div>
-              <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-medium text-white/90 text-glow tracking-tight leading-[1.1] sm:leading-[1]">
-                Memory of Us
-              </h1>
-              <motion.p
-                className="text-slate-300/50 text-sm sm:text-base max-w-md mx-auto font-light tracking-[0.15em] mt-3"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.8, duration: 1.5, ease: 'easeOut' }}
-              >
-                Some endings are necessary for us to grow.
-              </motion.p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -101,14 +107,14 @@ export default function HomePage() {
           </motion.div>
         ) : (
           <div className="columns-1 sm:columns-2 md:columns-3 gap-6 pt-4">
-              {memories.map((memory, i) => (
-                <MemoryCard
-                  key={memory.id}
-                  memory={memory}
-                  index={i}
-                  onDelete={handleDelete}
-                />
-              ))}
+            {memories.map((memory, i) => (
+              <MemoryCard
+                key={memory.id}
+                memory={memory}
+                index={i}
+                onDelete={handleDelete}
+              />
+            ))}
           </div>
         )}
       </section>
