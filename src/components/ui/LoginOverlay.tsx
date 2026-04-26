@@ -32,18 +32,17 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
     }
   };
 
-  if (isExiting) return null;
-
   return (
     <AnimatePresence>
-      <motion.div
-        key="login-overlay"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
-        transition={{ duration: 1, ease: 'easeInOut' }}
-        className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
-      >
+      {!isExiting && (
+        <motion.div
+          key="login-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
+          transition={{ duration: 1, ease: 'easeInOut' }}
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+        >
         <div className="relative w-full max-w-sm">
           <AnimatePresence mode="wait">
             {!isSuccess ? (
@@ -149,7 +148,8 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
             )}
           </AnimatePresence>
         </div>
-      </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 }

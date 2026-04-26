@@ -77,16 +77,16 @@ export function MemoryCard({ memory, index, onDelete }: MemoryCardProps) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
                         onClick={() => setExpanded(false)}
                     >
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
                         <motion.div
-                            initial={{ y: '100%', opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: '100%', opacity: 0 }}
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                            className={`relative w-full sm:max-w-md sm:mx-4 overflow-y-auto scroll-smooth hide-scrollbar sm:rounded-3xl rounded-t-[2rem] p-6 glass-card bg-gradient-to-br ${colorSet.bg} border ${colorSet.border}`}
+                            className={`relative w-full max-w-md overflow-y-auto scroll-smooth hide-scrollbar rounded-3xl p-6 glass-card bg-gradient-to-br ${colorSet.bg} border ${colorSet.border}`}
                             style={{
                                 boxShadow: `0 8px 64px 0 ${colorSet.accent}40`,
                                 maxHeight: '90dvh',
@@ -94,8 +94,6 @@ export function MemoryCard({ memory, index, onDelete }: MemoryCardProps) {
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Drag handle pill for mobile */}
-                            <div className="sm:hidden w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
                             <button
                                 onClick={() => setExpanded(false)}
                                 className="absolute top-4 right-4 z-20 text-white/60 hover:text-white transition-colors bg-black/30 p-2 rounded-full backdrop-blur-md touch-target flex items-center justify-center"
