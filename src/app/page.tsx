@@ -7,6 +7,7 @@ import AddMemoryModal from '@/components/ui/AddMemoryModal';
 import AudioPlayer from '@/components/ui/AudioPlayer';
 import { getMemories, addMemory, removeMemory, type Memory } from '@/app/actions';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { LoginOverlay } from '@/components/ui/LoginOverlay';
 
 // Dynamically import the 3D Canvas to avoid SSR issues
 const CanvasScene = dynamic(() => import('@/components/3d/CanvasScene'), {
@@ -16,12 +17,29 @@ const CanvasScene = dynamic(() => import('@/components/3d/CanvasScene'), {
 export default function HomePage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [titleVisible, setTitleVisible] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
+    const auth = localStorage.getItem('memory_auth');
+    if (auth === 'true') {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
     getMemories().then(data => setMemories(data));
-    const t = setTimeout(() => setTitleVisible(true), 300);
-    return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const t = setTimeout(() => setTitleVisible(true), 300);
+      return () => clearTimeout(t);
+    }
+  }, [isAuthenticated]);
+
+  const handleLoginSuccess = () => {
+    localStorage.setItem('memory_auth', 'true');
+    setIsAuthenticated(true);
+  };
 
   const handleAdd = async (memoryData: { title: string; content: string; imageUrl?: string }) => {
     const newMemory = await addMemory(memoryData);
@@ -48,6 +66,18 @@ export default function HomePage() {
             'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.85) 100%)',
         }}
       />
+
+      {isAuthenticated === false && (
+        <LoginOverlay onLoginSuccess={handleLoginSuccess} />
+      )}
+
+      {isAuthenticated === true && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.5, ease: 'easeOut' }}
+          className="relative z-10 flex flex-col min-h-screen"
+        >
 
       {/* Header */}
       <header className="relative z-10 pt-[max(3rem,env(safe-area-inset-top))] pb-6 text-center px-6">
@@ -124,6 +154,8 @@ export default function HomePage() {
 
       {/* Music Player */}
       <AudioPlayer />
+        </motion.div>
+      )}
     </main>
   );
 }
