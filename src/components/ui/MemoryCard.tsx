@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, Trash2, Calendar } from 'lucide-react';
+import { X, Trash2, Calendar, Maximize2 } from 'lucide-react';
 import { type Memory } from '@/app/actions';
 
 export const CARD_COLORS = [
@@ -18,6 +18,7 @@ interface MemoryCardProps {
 
 export function MemoryCard({ memory, index, onDelete }: MemoryCardProps) {
     const [expanded, setExpanded] = useState(false);
+    const [fullImage, setFullImage] = useState(false);
     const colorIndex = index % CARD_COLORS.length;
     const colorSet = CARD_COLORS[colorIndex];
 
@@ -34,8 +35,15 @@ export function MemoryCard({ memory, index, onDelete }: MemoryCardProps) {
                 onClick={() => setExpanded(true)}
             >
                 {memory.imageUrl && (
-                    <div className="-mx-4 -mt-4 mb-3 relative max-h-48 overflow-hidden rounded-t-2xl border-b border-white/10">
-                        <img src={memory.imageUrl} alt={memory.title} className="w-full h-full object-cover" />
+                    <div className="-mx-4 -mt-4 mb-3 relative h-48 overflow-hidden rounded-t-2xl border-b border-white/10 group">
+                        <img src={memory.imageUrl} alt={memory.title} className="w-full h-full object-cover object-center" />
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setFullImage(true); }}
+                            className="absolute bottom-2 right-2 p-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full text-white/80 hover:text-white transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                            aria-label="View full size"
+                        >
+                            <Maximize2 size={14} />
+                        </button>
                     </div>
                 )}
                 <div className="flex items-start justify-between mb-2 relative z-10">
@@ -79,7 +87,7 @@ export function MemoryCard({ memory, index, onDelete }: MemoryCardProps) {
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: '100%', opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                            className={`relative w-full sm:max-w-md sm:mx-4 overflow-y-auto hide-scrollbar sm:rounded-3xl rounded-t-[2rem] p-6 glass-card bg-gradient-to-br ${colorSet.bg} border ${colorSet.border}`}
+                            className={`relative w-full sm:max-w-md sm:mx-4 overflow-y-auto scroll-smooth hide-scrollbar sm:rounded-3xl rounded-t-[2rem] p-6 glass-card bg-gradient-to-br ${colorSet.bg} border ${colorSet.border}`}
                             style={{
                                 boxShadow: `0 8px 64px 0 ${colorSet.accent}40`,
                                 maxHeight: '90dvh',
@@ -98,8 +106,15 @@ export function MemoryCard({ memory, index, onDelete }: MemoryCardProps) {
                             </button>
 
                             {memory.imageUrl && (
-                                <div className="-mx-6 -mt-6 mb-5 relative max-h-96 overflow-hidden rounded-t-3xl border-b border-white/10">
-                                    <img src={memory.imageUrl} alt={memory.title} className="w-full h-auto max-h-[50vh] object-cover" />
+                                <div className="-mx-6 -mt-6 mb-5 relative h-64 sm:h-80 overflow-hidden rounded-t-3xl border-b border-white/10 group">
+                                    <img src={memory.imageUrl} alt={memory.title} className="w-full h-full object-cover object-center" />
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); setFullImage(true); }}
+                                        className="absolute bottom-3 right-3 p-2 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full text-white/80 hover:text-white transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                        aria-label="View full size"
+                                    >
+                                        <Maximize2 size={16} />
+                                    </button>
                                 </div>
                             )}
 
@@ -110,9 +125,44 @@ export function MemoryCard({ memory, index, onDelete }: MemoryCardProps) {
                                 {memory.content}
                             </p>
                             <div className="flex items-center gap-1.5 mt-5 pt-4 border-t border-white/10">
-                                <Heart size={12} className="text-pink-400" />
+                                <Calendar size={12} className="text-white/40" />
                                 <span className="text-white/40 text-xs">{memory.date}</span>
                             </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Full Size Image Modal */}
+            <AnimatePresence>
+                {fullImage && memory.imageUrl && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-lg"
+                        onClick={(e) => { e.stopPropagation(); setFullImage(false); }}
+                    >
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setFullImage(false); }}
+                            className="absolute top-4 right-4 z-20 text-white/60 hover:text-white transition-colors bg-black/30 p-2 rounded-full backdrop-blur-md touch-target flex items-center justify-center"
+                            aria-label="Close full size"
+                        >
+                            <X size={20} />
+                        </button>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                            className="relative w-full h-full p-4 sm:p-8 flex items-center justify-center"
+                        >
+                            <img 
+                                src={memory.imageUrl} 
+                                alt={memory.title} 
+                                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default" 
+                                onClick={(e) => e.stopPropagation()}
+                            />
                         </motion.div>
                     </motion.div>
                 )}
