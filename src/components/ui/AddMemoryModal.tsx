@@ -63,6 +63,9 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
         <>
             {/* FAB Button */}
             <motion.button
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 1.5, ease: [0.16, 1, 0.3, 1] }}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setOpen(true)}

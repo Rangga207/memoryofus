@@ -14,21 +14,24 @@ interface MemoryCardProps {
     memory: Memory;
     index: number;
     onDelete: (id: string) => void;
+    isInitialLoad?: boolean;
 }
 
-export function MemoryCard({ memory, index, onDelete }: MemoryCardProps) {
+export function MemoryCard({ memory, index, onDelete, isInitialLoad = false }: MemoryCardProps) {
     const [expanded, setExpanded] = useState(false);
     const [fullImage, setFullImage] = useState(false);
     const colorIndex = index % CARD_COLORS.length;
     const colorSet = CARD_COLORS[colorIndex];
+    
+    const animDelay = isInitialLoad ? 0.8 + index * 0.15 : 0;
 
     return (
         <>
             <motion.div
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                initial={{ opacity: 0, y: 40, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.85, y: -10 }}
-                transition={{ duration: 0.4, delay: index * 0.05, ease: 'easeOut' }}
+                transition={{ duration: 0.8, delay: animDelay, ease: [0.16, 1, 0.3, 1] }}
                 whileHover={{ y: -4, scale: 1.02 }}
                 className={`break-inside-avoid mb-4 cursor-pointer relative rounded-2xl p-4 glass-card bg-gradient-to-br ${colorSet.bg} border ${colorSet.border} transition-shadow duration-300`}
                 style={{ boxShadow: `0 4px 32px 0 ${colorSet.accent}20` }}

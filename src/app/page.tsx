@@ -18,6 +18,7 @@ export default function HomePage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [titleVisible, setTitleVisible] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     const auth = localStorage.getItem('memory_auth');
@@ -32,7 +33,11 @@ export default function HomePage() {
   useEffect(() => {
     if (isAuthenticated) {
       const t = setTimeout(() => setTitleVisible(true), 300);
-      return () => clearTimeout(t);
+      const t2 = setTimeout(() => setInitialLoad(false), 3000);
+      return () => {
+        clearTimeout(t);
+        clearTimeout(t2);
+      };
     }
   }, [isAuthenticated]);
 
@@ -75,7 +80,7 @@ export default function HomePage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.5, ease: 'easeOut' }}
+          transition={{ duration: 0.5 }}
           className="relative z-10 flex flex-col min-h-screen"
         >
 
@@ -90,9 +95,9 @@ export default function HomePage() {
             >
               <motion.div
                 className="flex flex-col items-center justify-center"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 1.5, ease: 'easeOut' }}
+                transition={{ delay: 0.5, duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
               >
                 {/* Celestial Orbit Divider */}
                 <div className="flex items-center gap-4 mb-5 opacity-80">
@@ -108,7 +113,7 @@ export default function HomePage() {
                   className="flex items-center justify-center gap-3 text-white/40 text-[11px] sm:text-[13px] font-light tracking-[0.2em] uppercase w-full max-w-2xl mx-auto"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6, duration: 1.8, ease: 'easeOut' }}
+                  transition={{ delay: 0.8, duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
                 >
                   <span className="text-white/20 text-[10px]">✧</span>
                   <span className="text-center">Some endings are necessary for us to grow</span>
@@ -143,6 +148,7 @@ export default function HomePage() {
                 memory={memory}
                 index={i}
                 onDelete={handleDelete}
+                isInitialLoad={initialLoad}
               />
             ))}
           </div>
