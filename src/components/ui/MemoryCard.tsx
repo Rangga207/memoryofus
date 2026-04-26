@@ -46,22 +46,21 @@ export function MemoryCard({ memory, index, onDelete }: MemoryCardProps) {
                         </button>
                     </div>
                 )}
-                <div className="flex items-start justify-between mb-2 relative z-10">
-                    <div className="flex-1" />
+                <div className="flex items-start justify-between gap-3 mb-2 relative z-10">
+                    <h3 className="font-serif font-semibold text-white text-lg leading-snug line-clamp-2 flex-1">
+                        {memory.title}
+                    </h3>
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             onDelete(memory.id);
                         }}
-                        className="text-white/30 hover:text-red-400 transition-colors p-2 -mr-1 rounded-lg hover:bg-red-500/10 touch-target flex items-center justify-center"
+                        className="text-white/30 hover:text-red-400 transition-colors p-2 -mr-2 -mt-1 rounded-lg hover:bg-red-500/10 flex-shrink-0 touch-target flex items-center justify-center"
                         aria-label="Delete memory"
                     >
                         <Trash2 size={13} />
                     </button>
                 </div>
-                <h3 className="font-serif font-semibold text-white text-lg leading-snug mb-2 line-clamp-2">
-                    {memory.title}
-                </h3>
                 <p className="text-white/60 text-sm leading-relaxed whitespace-pre-wrap line-clamp-4">
                     {memory.content}
                 </p>
