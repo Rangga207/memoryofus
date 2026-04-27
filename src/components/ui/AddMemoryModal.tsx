@@ -26,7 +26,7 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800; // compress for localstorage quota
+                        const MAX_WIDTH = 1920; // Increased for HD quality
                         let width = img.width;
                         let height = img.height;
 
@@ -38,9 +38,16 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
-                        ctx?.drawImage(img, 0, 0, width, height);
+                        
+                        // Use better interpolation if supported (mostly for scaling down)
+                        if (ctx) {
+                            ctx.imageSmoothingEnabled = true;
+                            ctx.imageSmoothingQuality = 'high';
+                            ctx.drawImage(img, 0, 0, width, height);
+                        }
 
-                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                        // Increased quality to 0.9 (90%) for HD appearance
+                        resolve(canvas.toDataURL('image/jpeg', 0.9));
                     };
                     img.src = event.target?.result as string;
                 };
