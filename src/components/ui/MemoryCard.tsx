@@ -14,10 +14,11 @@ interface MemoryCardProps {
     memory: Memory;
     index: number;
     onDelete: (id: string) => void;
+    onUpdate?: (id: string, data: Partial<Memory>) => void;
     isInitialLoad?: boolean;
 }
 
-export function MemoryCard({ memory, index, onDelete, isInitialLoad = false }: MemoryCardProps) {
+export function MemoryCard({ memory, index, onDelete, onUpdate, isInitialLoad = false }: MemoryCardProps) {
     const [expanded, setExpanded] = useState(false);
     const [fullImage, setFullImage] = useState(false);
     const colorIndex = index % CARD_COLORS.length;
@@ -118,10 +119,32 @@ export function MemoryCard({ memory, index, onDelete, isInitialLoad = false }: M
                                 </div>
                             )}
 
-                            <h2 className="font-serif text-xl font-semibold text-white mb-3 relative z-10 mt-1">
+                            <h2 
+                                contentEditable
+                                suppressContentEditableWarning
+                                onBlur={(e) => {
+                                    const newTitle = e.currentTarget.innerText.trim();
+                                    if (newTitle !== memory.title) onUpdate?.(memory.id, { title: newTitle });
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        e.currentTarget.blur();
+                                    }
+                                }}
+                                className="font-serif text-xl font-semibold text-white mb-3 relative z-10 mt-1 outline-none hover:bg-white/5 focus:bg-white/10 transition-colors rounded px-2 -mx-2 cursor-text"
+                            >
                                 {memory.title}
                             </h2>
-                            <p className="text-white/75 text-sm leading-relaxed whitespace-pre-wrap">
+                            <p 
+                                contentEditable
+                                suppressContentEditableWarning
+                                onBlur={(e) => {
+                                    const newContent = e.currentTarget.innerText.trim();
+                                    if (newContent !== memory.content) onUpdate?.(memory.id, { content: newContent });
+                                }}
+                                className="text-white/75 text-sm leading-relaxed whitespace-pre-wrap outline-none hover:bg-white/5 focus:bg-white/10 transition-colors rounded px-2 -mx-2 cursor-text"
+                            >
                                 {memory.content}
                             </p>
                             <div className="flex items-center gap-1.5 mt-5 pt-4 border-t border-white/10">

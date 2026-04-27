@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { MemoryCard } from '@/components/ui/MemoryCard';
 import AddMemoryModal from '@/components/ui/AddMemoryModal';
 import AudioPlayer from '@/components/ui/AudioPlayer';
-import { getMemories, addMemory, removeMemory, type Memory } from '@/app/actions';
+import { getMemories, addMemory, removeMemory, updateMemory, type Memory } from '@/app/actions';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { LoginOverlay } from '@/components/ui/LoginOverlay';
 
@@ -54,6 +54,11 @@ export default function HomePage() {
   const handleDelete = async (id: string) => {
     setMemories((prev) => prev.filter((m) => m.id !== id));
     await removeMemory(id);
+  };
+
+  const handleUpdate = async (id: string, data: Partial<Memory>) => {
+    setMemories((prev) => prev.map((m) => m.id === id ? { ...m, ...data } : m));
+    await updateMemory(id, data);
   };
 
   return (
@@ -148,6 +153,7 @@ export default function HomePage() {
                 memory={memory}
                 index={i}
                 onDelete={handleDelete}
+                onUpdate={handleUpdate}
                 isInitialLoad={initialLoad}
               />
             ))}

@@ -109,3 +109,11 @@ export async function removeMemory(id: string) {
     await saveDb(updated);
     revalidatePath('/');
 }
+
+export async function updateMemory(id: string, data: Partial<Memory>) {
+    const memories = await getDb();
+    const updated = memories.map(m => m.id === id ? { ...m, ...data } : m);
+    await saveDb(updated);
+    revalidatePath('/');
+    return updated.find(m => m.id === id);
+}
