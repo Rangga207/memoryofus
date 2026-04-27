@@ -46,7 +46,7 @@ export default function HomePage() {
     setIsAuthenticated(true);
   };
 
-  const handleAdd = async (memoryData: { title: string; content: string; imageUrl?: string }) => {
+  const handleAdd = async (memoryData: { title: string; content: string; imageUrl?: string; imageUrls?: string[] }) => {
     const newMemory = await addMemory(memoryData);
     setMemories((prev) => [newMemory, ...prev]);
   };

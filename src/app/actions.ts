@@ -12,6 +12,7 @@ export interface Memory {
     emoji: string;
     color: string;
     imageUrl?: string;
+    imageUrls?: string[];
 }
 
 const dbPath = path.join(process.cwd(), 'database.json');
@@ -79,7 +80,7 @@ export async function getMemories() {
     return await getDb();
 }
 
-export async function addMemory(data: { title: string; content: string; imageUrl?: string }) {
+export async function addMemory(data: { title: string; content: string; imageUrl?: string; imageUrls?: string[] }) {
     const memories = await getDb();
     
     const newMemory: Memory = {
@@ -89,6 +90,7 @@ export async function addMemory(data: { title: string; content: string; imageUrl
         emoji: '💌',
         color: '',
         imageUrl: data.imageUrl,
+        imageUrls: data.imageUrls,
         date: new Date().toLocaleDateString('id-ID', {
             day: 'numeric',
             month: 'long',

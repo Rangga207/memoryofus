@@ -4,44 +4,56 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Image as ImageIcon } from 'lucide-react';
 
 interface AddMemoryModalProps {
-    onAdd: (data: { title: string; content: string; imageUrl?: string }) => Promise<void> | void;
+    onAdd: (data: { title: string; content: string; imageUrl?: string; imageUrls?: string[] }) => Promise<void> | void;
 }
 
 export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
     const [open, setOpen] = useState(false);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [image, setImage] = useState<string | null>(null);
+    const [images, setImages] = useState<string[]>([]);
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800; // compress for localstorage quota
-                let width = img.width;
-                let height = img.height;
+        const newImages: string[] = [];
 
-                if (width > MAX_WIDTH) {
-                    height = Math.round((height * MAX_WIDTH) / width);
-                    width = MAX_WIDTH;
-                }
+        for (const file of files) {
+            const dataUrl = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; // compress for localstorage quota
+                        let width = img.width;
+                        let height = img.height;
 
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx?.drawImage(img, 0, 0, width, height);
+                        if (width > MAX_WIDTH) {
+                            height = Math.round((height * MAX_WIDTH) / width);
+                            width = MAX_WIDTH;
+                        }
 
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                setImage(dataUrl);
-            };
-            img.src = event.target?.result as string;
-        };
-        reader.readAsDataURL(file);
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx?.drawImage(img, 0, 0, width, height);
+
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                    img.src = event.target?.result as string;
+                };
+                reader.readAsDataURL(file);
+            });
+            newImages.push(dataUrl);
+        }
+        setImages(prev => [...prev, ...newImages]);
+        e.target.value = ''; // reset
+    };
+
+    const removeImage = (index: number) => {
+        setImages(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -49,10 +61,15 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
         if (!title.trim() || !content.trim()) return;
         
         try {
-            await onAdd({ title, content, imageUrl: image || undefined });
+            await onAdd({ 
+                title, 
+                content, 
+                imageUrl: images[0] || undefined, 
+                imageUrls: images.length > 0 ? images : undefined 
+            });
             setTitle('');
             setContent('');
-            setImage(null);
+            setImages([]);
             setOpen(false);
         } catch (error) {
             alert('Gagal menyimpan memori ke database!');
@@ -117,36 +134,40 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 {/* Image Upload & Preview */}
-                                {image ? (
-                                    <div className="relative w-full rounded-xl overflow-hidden mb-2">
-                                        <img src={image} alt="Preview" className="w-full h-auto max-h-48 object-cover" />
-                                        <button
-                                            type="button"
-                                            onClick={() => setImage(null)}
-                                            className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 backdrop-blur-md transition-colors"
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <input
-                                            type="file"
-                                            id="image-upload"
-                                            accept="image/*"
-                                            onChange={handleImageUpload}
-                                            className="hidden"
-                                        />
-                                        <label
-                                            htmlFor="image-upload"
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-center justify-center gap-2 cursor-pointer text-white/50 hover:bg-white/10 hover:text-white transition group focus-within:ring-1 focus-within:ring-white/40 focus-within:border-white/30"
-                                            tabIndex={0}
-                                        >
-                                            <ImageIcon size={18} className="group-hover:scale-110 transition-transform" />
-                                            <span className="text-sm font-medium">Add Photo</span>
-                                        </label>
+                                {images.length > 0 && (
+                                    <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                                        {images.map((img, idx) => (
+                                            <div key={idx} className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 rounded-xl overflow-hidden mb-2 border border-white/10 group">
+                                                <img src={img} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(idx)}
+                                                    className="absolute top-1.5 right-1.5 bg-black/50 text-white p-1 rounded-full hover:bg-red-500/80 backdrop-blur-md transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
+                                <div>
+                                    <input
+                                        type="file"
+                                        id="image-upload"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleImageUpload}
+                                        className="hidden"
+                                    />
+                                    <label
+                                        htmlFor="image-upload"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-center justify-center gap-2 cursor-pointer text-white/50 hover:bg-white/10 hover:text-white transition group focus-within:ring-1 focus-within:ring-white/40 focus-within:border-white/30"
+                                        tabIndex={0}
+                                    >
+                                        <ImageIcon size={18} className="group-hover:scale-110 transition-transform" />
+                                        <span className="text-sm font-medium">{images.length > 0 ? 'Add More Photos' : 'Add Photos'}</span>
+                                    </label>
+                                </div>
 
                                 {/* Title */}
                                 <div>

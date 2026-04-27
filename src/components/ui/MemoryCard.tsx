@@ -20,11 +20,14 @@ interface MemoryCardProps {
 
 export function MemoryCard({ memory, index, onDelete, onUpdate, isInitialLoad = false }: MemoryCardProps) {
     const [expanded, setExpanded] = useState(false);
-    const [fullImage, setFullImage] = useState(false);
+    const [fullImage, setFullImage] = useState<string | null>(null);
     const colorIndex = index % CARD_COLORS.length;
     const colorSet = CARD_COLORS[colorIndex];
     
     const animDelay = isInitialLoad ? 0.8 + index * 0.15 : 0;
+    
+    const allImages = memory.imageUrls || (memory.imageUrl ? [memory.imageUrl] : []);
+    const displayImage = allImages[0];
 
     return (
         <>
@@ -38,11 +41,16 @@ export function MemoryCard({ memory, index, onDelete, onUpdate, isInitialLoad = 
                 style={{ boxShadow: `0 4px 32px 0 ${colorSet.accent}20` }}
                 onClick={() => setExpanded(true)}
             >
-                {memory.imageUrl && (
+                {displayImage && (
                     <div className="-mx-4 -mt-4 mb-3 relative h-48 overflow-hidden rounded-t-2xl border-b border-white/10 group">
-                        <img src={memory.imageUrl} alt={memory.title} className="w-full h-full object-cover object-center" />
+                        <img src={displayImage} alt={memory.title} className="w-full h-full object-cover object-center" />
+                        {allImages.length > 1 && (
+                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-full text-xs text-white/90 font-medium">
+                                +{allImages.length - 1}
+                            </div>
+                        )}
                         <button 
-                            onClick={(e) => { e.stopPropagation(); setFullImage(true); }}
+                            onClick={(e) => { e.stopPropagation(); setFullImage(displayImage); }}
                             className="absolute bottom-2 right-2 p-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full text-white/80 hover:text-white transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                             aria-label="View full size"
                         >
@@ -106,16 +114,38 @@ export function MemoryCard({ memory, index, onDelete, onUpdate, isInitialLoad = 
                                 <X size={20} />
                             </button>
 
-                            {memory.imageUrl && (
-                                <div className="-mx-6 -mt-6 mb-5 relative h-64 sm:h-80 overflow-hidden rounded-t-3xl border-b border-white/10 group">
-                                    <img src={memory.imageUrl} alt={memory.title} className="w-full h-full object-cover object-center" />
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); setFullImage(true); }}
-                                        className="absolute bottom-3 right-3 p-2 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full text-white/80 hover:text-white transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                                        aria-label="View full size"
-                                    >
-                                        <Maximize2 size={16} />
-                                    </button>
+                            {allImages.length > 0 && (
+                                <div className="-mx-6 -mt-6 mb-5 relative overflow-hidden rounded-t-3xl border-b border-white/10 group">
+                                    {allImages.length === 1 ? (
+                                        <div className="h-64 sm:h-80 relative">
+                                            <img src={allImages[0]} alt={memory.title} className="w-full h-full object-cover object-center" />
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); setFullImage(allImages[0]); }}
+                                                className="absolute bottom-3 right-3 p-2 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full text-white/80 hover:text-white transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                                aria-label="View full size"
+                                            >
+                                                <Maximize2 size={16} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar">
+                                            {allImages.map((img, idx) => (
+                                                <div key={idx} className="w-full h-64 sm:h-80 flex-shrink-0 snap-center relative">
+                                                    <img src={img} alt={`${memory.title} ${idx + 1}`} className="w-full h-full object-cover object-center" />
+                                                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-xs text-white/90 font-medium">
+                                                        {idx + 1} / {allImages.length}
+                                                    </div>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); setFullImage(img); }}
+                                                        className="absolute bottom-3 right-3 p-2 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full text-white/80 hover:text-white transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                                        aria-label="View full size"
+                                                    >
+                                                        <Maximize2 size={16} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -158,16 +188,16 @@ export function MemoryCard({ memory, index, onDelete, onUpdate, isInitialLoad = 
 
             {/* Full Size Image Modal */}
             <AnimatePresence>
-                {fullImage && memory.imageUrl && (
+                {fullImage && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 backdrop-blur-lg"
-                        onClick={(e) => { e.stopPropagation(); setFullImage(false); }}
+                        onClick={(e) => { e.stopPropagation(); setFullImage(null); }}
                     >
                         <button
-                            onClick={(e) => { e.stopPropagation(); setFullImage(false); }}
+                            onClick={(e) => { e.stopPropagation(); setFullImage(null); }}
                             className="absolute top-4 right-4 z-20 text-white/60 hover:text-white transition-colors bg-black/30 p-2 rounded-full backdrop-blur-md touch-target flex items-center justify-center"
                             aria-label="Close full size"
                         >
@@ -181,7 +211,7 @@ export function MemoryCard({ memory, index, onDelete, onUpdate, isInitialLoad = 
                             className="relative w-full h-full p-4 sm:p-8 flex items-center justify-center"
                         >
                             <img 
-                                src={memory.imageUrl} 
+                                src={fullImage} 
                                 alt={memory.title} 
                                 className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default" 
                                 onClick={(e) => e.stopPropagation()}
