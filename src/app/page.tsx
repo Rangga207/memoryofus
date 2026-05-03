@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Image as ImageIcon, LayoutGrid, Sparkles, CalendarDays, Heart, Clock, X, Trash2, Upload } from 'lucide-react';
+import { Search, Image as ImageIcon, LayoutGrid, Sparkles, CalendarDays, Heart, Clock, X, Trash2, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { MemoryCard } from '@/components/ui/MemoryCard';
 import AddMemoryModal from '@/components/ui/AddMemoryModal';
@@ -22,23 +22,23 @@ export default function HomePage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'memories' | 'gallery'>('memories');
-  const [fullGalleryImage, setFullGalleryImage] = useState<{url: string, memoryId: string, imageIndex: number} | null>(null);
+  const [fullGalleryImage, setFullGalleryImage] = useState<{ url: string, memoryId: string, imageIndex: number } | null>(null);
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
 
   const filteredMemories = useMemo(() => {
     return memories.filter(m =>
       !m.isGalleryOnly &&
       (m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.date.toLowerCase().includes(searchQuery.toLowerCase()))
+        m.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.date.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [memories, searchQuery]);
 
   const allImages = useMemo(() => {
-    const sourceMemories = searchQuery 
-        ? memories.filter(m => m.title.toLowerCase().includes(searchQuery.toLowerCase()) || m.content.toLowerCase().includes(searchQuery.toLowerCase()))
-        : memories;
-        
+    const sourceMemories = searchQuery
+      ? memories.filter(m => m.title.toLowerCase().includes(searchQuery.toLowerCase()) || m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+      : memories;
+
     return sourceMemories.flatMap(m => {
       if (m.hideFromGallery) return [];
 
@@ -108,71 +108,89 @@ export default function HomePage() {
   const handleDeleteGalleryImage = async (memoryId: string, imageIndex: number) => {
     const memory = memories.find(m => m.id === memoryId);
     if (!memory) return;
-    
+
     if (memory.isGalleryOnly && (memory.imageUrls?.length === 1 || !memory.imageUrls)) {
-       await handleDelete(memoryId);
+      await handleDelete(memoryId);
     } else {
-       const newImageUrls = memory.imageUrls ? [...memory.imageUrls] : (memory.imageUrl ? [memory.imageUrl] : []);
-       newImageUrls.splice(imageIndex, 1);
-       
-       const updates: Partial<Memory> = {
-         imageUrls: newImageUrls.length > 0 ? newImageUrls : undefined,
-         imageUrl: newImageUrls.length > 0 ? newImageUrls[0] : undefined
-       };
-       await handleUpdate(memoryId, updates);
+      const newImageUrls = memory.imageUrls ? [...memory.imageUrls] : (memory.imageUrl ? [memory.imageUrl] : []);
+      newImageUrls.splice(imageIndex, 1);
+
+      const updates: Partial<Memory> = {
+        imageUrls: newImageUrls.length > 0 ? newImageUrls : undefined,
+        imageUrl: newImageUrls.length > 0 ? newImageUrls[0] : undefined
+      };
+      await handleUpdate(memoryId, updates);
     }
     setFullGalleryImage(null);
+  };
+
+  const currentGalleryIndex = fullGalleryImage
+    ? allImages.findIndex(img => img.url === fullGalleryImage.url && img.memoryId === fullGalleryImage.memoryId)
+    : -1;
+
+  const handleNextImage = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (currentGalleryIndex !== -1 && currentGalleryIndex < allImages.length - 1) {
+      setFullGalleryImage(allImages[currentGalleryIndex + 1]);
+    }
+  };
+
+  const handlePrevImage = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (currentGalleryIndex > 0) {
+      setFullGalleryImage(allImages[currentGalleryIndex - 1]);
+    }
   };
 
   const handleGalleryUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
-    
+
     setIsUploadingGallery(true);
     try {
-        const processImage = (file: File): Promise<string> => {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800;
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
-                        canvas.width = width; canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        if (ctx) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'medium'; ctx.drawImage(img, 0, 0, width, height); }
-                        resolve(canvas.toDataURL('image/jpeg', 0.8));
-                    };
-                    img.src = e.target?.result as string;
-                };
-                reader.readAsDataURL(file);
-            });
-        };
-        const newBase64Images: string[] = [];
-        for (const file of files) {
-            try {
-                const dataUrl = await processImage(file);
-                newBase64Images.push(dataUrl);
-            } catch (e) {
-                console.error("Failed to process gallery image", e);
-            }
+      const processImage = (file: File): Promise<string> => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const MAX_WIDTH = 800;
+              let width = img.width;
+              let height = img.height;
+              if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
+              canvas.width = width; canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'medium'; ctx.drawImage(img, 0, 0, width, height); }
+              resolve(canvas.toDataURL('image/jpeg', 0.8));
+            };
+            img.src = e.target?.result as string;
+          };
+          reader.readAsDataURL(file);
+        });
+      };
+      const newBase64Images: string[] = [];
+      for (const file of files) {
+        try {
+          const dataUrl = await processImage(file);
+          newBase64Images.push(dataUrl);
+        } catch (e) {
+          console.error("Failed to process gallery image", e);
         }
-        
-        if (newBase64Images.length > 0) {
-            await handleAdd({
-                title: 'Gallery Upload',
-                content: '',
-                imageUrl: newBase64Images[0],
-                imageUrls: newBase64Images,
-                isGalleryOnly: true
-            });
-        }
+      }
+
+      if (newBase64Images.length > 0) {
+        await handleAdd({
+          title: 'Gallery Upload',
+          content: '',
+          imageUrl: newBase64Images[0],
+          imageUrls: newBase64Images,
+          isGalleryOnly: true
+        });
+      }
     } finally {
-        setIsUploadingGallery(false);
-        event.target.value = '';
+      setIsUploadingGallery(false);
+      event.target.value = '';
     }
   };
 
@@ -248,14 +266,14 @@ export default function HomePage() {
                 className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'memories' ? 'bg-white/10 text-white shadow-lg' : 'text-white/40 hover:text-white/80'
                   }`}
               >
-                <LayoutGrid size={16} /> Memories
+                <LayoutGrid size={16} /> Notes
               </button>
               <button
                 onClick={() => setActiveTab('gallery')}
                 className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'gallery' ? 'bg-white/10 text-white shadow-lg' : 'text-white/40 hover:text-white/80'
                   }`}
               >
-                <ImageIcon size={16} /> Gallery
+                <ImageIcon size={16} /> Life Updates
               </button>
             </div>
 
@@ -320,24 +338,23 @@ export default function HomePage() {
                 >
                   <div className="flex justify-between items-end mb-4 px-1">
                     <p className="text-white/40 text-sm">{allImages.length} photos</p>
-                    <label className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
-                        isUploadingGallery 
-                            ? 'bg-white/5 text-white/30 cursor-not-allowed' 
-                            : 'bg-white/10 hover:bg-white/20 text-white shadow-lg'
-                    }`}>
-                        <Upload size={14} />
-                        {isUploadingGallery ? 'Uploading...' : 'Upload Photos'}
-                        <input 
-                            type="file" 
-                            accept="image/*" 
-                            multiple 
-                            className="hidden" 
-                            disabled={isUploadingGallery}
-                            onChange={handleGalleryUpload} 
-                        />
+                    <label className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-colors ${isUploadingGallery
+                        ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                        : 'bg-white/10 hover:bg-white/20 text-white shadow-lg'
+                      }`}>
+                      <Upload size={14} />
+                      {isUploadingGallery ? 'Uploading...' : 'Upload Photos'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        disabled={isUploadingGallery}
+                        onChange={handleGalleryUpload}
+                      />
                     </label>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {allImages.length === 0 ? (
                       <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
@@ -356,16 +373,16 @@ export default function HomePage() {
                           <img src={imgData.url} alt="Gallery" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
                           <button
-                              onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (confirm('Are you sure you want to delete this photo?')) {
-                                      handleDeleteGalleryImage(imgData.memoryId, imgData.imageIndex);
-                                  }
-                              }}
-                              className="absolute top-2 right-2 p-1.5 bg-black/50 text-white/70 hover:text-red-400 hover:bg-black/80 rounded-full backdrop-blur-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all z-10"
-                              aria-label="Delete from gallery"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('Are you sure you want to delete this photo?')) {
+                                handleDeleteGalleryImage(imgData.memoryId, imgData.imageIndex);
+                              }
+                            }}
+                            className="absolute top-2 right-2 p-1.5 bg-black/50 text-white/70 hover:text-red-400 hover:bg-black/80 rounded-full backdrop-blur-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all z-10"
+                            aria-label="Delete from gallery"
                           >
-                              <Trash2 size={14} />
+                            <Trash2 size={14} />
                           </button>
                         </motion.div>
                       ))
@@ -399,25 +416,56 @@ export default function HomePage() {
                 >
                   <X size={20} />
                 </button>
+
+                {currentGalleryIndex > 0 && (
+                  <button
+                    onClick={handlePrevImage}
+                    className="absolute left-4 z-20 text-white/50 hover:text-white transition-colors bg-black/20 hover:bg-black/40 p-3 rounded-full backdrop-blur-md hidden sm:flex items-center justify-center"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                )}
+
+                {currentGalleryIndex < allImages.length - 1 && (
+                  <button
+                    onClick={handleNextImage}
+                    className="absolute right-4 z-20 text-white/50 hover:text-white transition-colors bg-black/20 hover:bg-black/40 p-3 rounded-full backdrop-blur-md hidden sm:flex items-center justify-center"
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                )}
+
                 <motion.div
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="relative w-full h-full p-4 sm:p-8 flex flex-col items-center justify-center"
+                  key={fullGalleryImage.url} // Forces re-animation when image changes
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  className="relative w-full h-full p-4 sm:p-8 flex flex-col items-center justify-center touch-none"
                   onClick={(e) => e.stopPropagation()}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={(e, { offset, velocity }) => {
+                    const swipe = Math.abs(offset.x) * velocity.x;
+                    if (swipe < -1000) {
+                      handleNextImage();
+                    } else if (swipe > 1000) {
+                      handlePrevImage();
+                    }
+                  }}
                 >
                   <img
                     src={fullGalleryImage.url}
                     alt="Gallery Full Size"
-                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default mb-4"
+                    className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl cursor-grab active:cursor-grabbing mb-6 pointer-events-none"
                   />
                   <button
-                    onClick={(e) => { 
-                        e.stopPropagation(); 
-                        if (confirm('Are you sure you want to delete this photo?')) {
-                            handleDeleteGalleryImage(fullGalleryImage.memoryId, fullGalleryImage.imageIndex);
-                        }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('Are you sure you want to delete this photo?')) {
+                        handleDeleteGalleryImage(fullGalleryImage.memoryId, fullGalleryImage.imageIndex);
+                      }
                     }}
                     className="bg-red-500/20 hover:bg-red-500/40 text-red-100 border border-red-500/30 backdrop-blur-md px-6 py-2.5 rounded-full transition-all flex items-center gap-2 shadow-lg"
                   >
