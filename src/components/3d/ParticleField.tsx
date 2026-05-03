@@ -16,7 +16,7 @@ function mkRand(seed: number) {
     };
 }
 
-function ForegroundDust({ count = 250 }) {
+function ForegroundDust({ count = 250, mouseRef }: { count?: number, mouseRef: React.MutableRefObject<{x: number, y: number}> }) {
     const dustRef = useRef<THREE.Points>(null);
     const { positions } = useMemo(() => {
         const pos = new Float32Array(count * 3);
@@ -30,8 +30,9 @@ function ForegroundDust({ count = 250 }) {
 
     useFrame((_, delta) => {
         if (dustRef.current) {
-            dustRef.current.position.y += delta * 0.08;
-            dustRef.current.position.x += delta * 0.03;
+            // Interactive dust flowing with mouse movement
+            dustRef.current.position.y += delta * 0.08 + (mouseRef.current.y * 0.005);
+            dustRef.current.position.x += delta * 0.03 - (mouseRef.current.x * 0.005);
             if (dustRef.current.position.y > 10) dustRef.current.position.y = -10;
             if (dustRef.current.position.x > 20) dustRef.current.position.x = -20;
         }
@@ -119,14 +120,13 @@ export default function ParticleField({ count = 900 }: { count?: number }) {
             pointsRef.current.rotation.x -= delta * 0.008;
         }
 
-        // Mouse Parallax POV (Head tracking)
-        // using global mouseRef since the 3D canvas is pointerEvents: none
-        const targetX = mouseRef.current.x * 1.5;
-        const targetY = mouseRef.current.y * 1.5;
+        // Mouse Parallax POV (Head tracking) - Increased for more interaction
+        const targetX = mouseRef.current.x * 3.0;
+        const targetY = mouseRef.current.y * 3.0;
 
-        // Smoothly interpolate camera position
-        state.camera.position.x += (targetX - state.camera.position.x) * 0.02;
-        state.camera.position.y += (targetY - state.camera.position.y) * 0.02;
+        // Smoothly interpolate camera position (faster response)
+        state.camera.position.x += (targetX - state.camera.position.x) * 0.04;
+        state.camera.position.y += (targetY - state.camera.position.y) * 0.04;
 
         // Update Twinkle Time Uniform
         if (shaderRef.current) {
@@ -193,7 +193,7 @@ export default function ParticleField({ count = 900 }: { count?: number }) {
                 }}
             />
         </points>
-        <ForegroundDust />
+        <ForegroundDust mouseRef={mouseRef} />
         </>
     );
 }

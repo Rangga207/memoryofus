@@ -4,6 +4,11 @@ import fs from 'fs/promises';
 import path from 'path';
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 
+export async function verifyLogin(email: string, pass: string): Promise<boolean> {
+    // In a real app, this would check a database
+    return email === 'katarinacakra230706@gmail.com' && pass === 'DwiCantikBGT';
+}
+
 export interface Memory {
     id: string;
     title: string;
@@ -114,7 +119,13 @@ export async function removeMemory(id: string) {
 
 export async function updateMemory(id: string, data: Partial<Memory>) {
     const memories = await getDb();
-    const updated = memories.map(m => m.id === id ? { ...m, ...data } : m);
+    const currentDate = new Date().toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
+
+    const updated = memories.map(m => m.id === id ? { ...m, ...data, date: currentDate } : m);
     await saveDb(updated);
     revalidatePath('/');
     return updated.find(m => m.id === id);

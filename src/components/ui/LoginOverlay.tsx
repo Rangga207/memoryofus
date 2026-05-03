@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Mail, ChevronRight } from 'lucide-react';
+import { verifyLogin } from '@/app/actions';
 
 interface LoginOverlayProps {
   onLoginSuccess: () => void;
@@ -13,10 +14,16 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
   const [error, setError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === 'katarinacakra230706@gmail.com' && password === 'DwiCantikBGT') {
+    setIsLoading(true);
+    
+    const isValid = await verifyLogin(email, password);
+    setIsLoading(false);
+
+    if (isValid) {
       setError(false);
       setIsSuccess(true);
       
@@ -97,19 +104,24 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
 
                     <motion.button
                       type="submit"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      disabled={isLoading}
+                      whileHover={isLoading ? {} : { scale: 1.02 }}
+                      whileTap={isLoading ? {} : { scale: 0.98 }}
                       className={`w-full py-4 rounded-xl font-light text-white flex items-center justify-center gap-2 transition-all duration-500 relative overflow-hidden group ${
                         error
                           ? 'bg-red-500/10 text-red-300 border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)]'
+                          : isLoading
+                          ? 'bg-white/10 border border-white/[0.1] shadow-[0_0_20px_rgba(255,255,255,0.05)] cursor-not-allowed opacity-70'
                           : 'bg-white/5 hover:bg-white/10 border border-white/[0.05] shadow-[0_0_20px_rgba(255,255,255,0.02)]'
                       }`}
                     >
-                      {!error && (
+                      {!error && !isLoading && (
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.07] to-transparent -translate-x-[100%] group-hover:animate-[shimmer_2s_infinite]" />
                       )}
                       {error ? (
                         <span className="tracking-[0.2em] uppercase text-[10px]">Access Denied</span>
+                      ) : isLoading ? (
+                        <span className="tracking-[0.25em] uppercase text-[10px] animate-pulse">Verifying...</span>
                       ) : (
                         <>
                           <span className="tracking-[0.25em] uppercase text-[10px]">Continue</span>
