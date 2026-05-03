@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Image as ImageIcon } from 'lucide-react';
 
 interface AddMemoryModalProps {
-    onAdd: (data: { title: string; content: string; imageUrl?: string; imageUrls?: string[] }) => Promise<void> | void;
+    onAdd: (data: { title: string; content: string; imageUrl?: string; imageUrls?: string[]; hideFromGallery?: boolean }) => Promise<void> | void;
 }
 
 export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
@@ -12,6 +12,7 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [images, setImages] = useState<string[]>([]);
+    const [hideFromGallery, setHideFromGallery] = useState(false);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -22,40 +23,46 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
         const newImages: string[] = [];
 
         for (const file of files) {
-            const dataUrl = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800; // Decreased to save database size limits
-                        let width = img.width;
-                        let height = img.height;
+            try {
+                const dataUrl = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 800; // Decreased to save database size limits
+                            let width = img.width;
+                            let height = img.height;
 
-                        if (width > MAX_WIDTH) {
-                            height = Math.round((height * MAX_WIDTH) / width);
-                            width = MAX_WIDTH;
-                        }
+                            if (width > MAX_WIDTH) {
+                                height = Math.round((height * MAX_WIDTH) / width);
+                                width = MAX_WIDTH;
+                            }
 
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        
-                        // Use better interpolation if supported (mostly for scaling down)
-                        if (ctx) {
-                            ctx.imageSmoothingEnabled = true;
-                            ctx.imageSmoothingQuality = 'medium';
-                            ctx.drawImage(img, 0, 0, width, height);
-                        }
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            
+                            // Use better interpolation if supported (mostly for scaling down)
+                            if (ctx) {
+                                ctx.imageSmoothingEnabled = true;
+                                ctx.imageSmoothingQuality = 'medium';
+                                ctx.drawImage(img, 0, 0, width, height);
+                            }
 
-                        // Compressed to 0.8 to balance quality and size
-                        resolve(canvas.toDataURL('image/jpeg', 0.8));
+                            // Compressed to 0.8 to balance quality and size
+                            resolve(canvas.toDataURL('image/jpeg', 0.8));
+                        };
+                        img.onerror = reject;
+                        img.src = event.target?.result as string;
                     };
-                    img.src = event.target?.result as string;
-                };
-                reader.readAsDataURL(file);
-            });
-            newImages.push(dataUrl);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                newImages.push(dataUrl);
+            } catch (err) {
+                console.error("Failed to process image", err);
+            }
         }
         setImages(prev => [...prev, ...newImages]);
         e.target.value = ''; // reset
@@ -75,11 +82,13 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
                 title, 
                 content, 
                 imageUrl: images[0] || undefined, 
-                imageUrls: images.length > 0 ? images : undefined 
+                imageUrls: images.length > 0 ? images : undefined,
+                hideFromGallery 
             });
             setTitle('');
             setContent('');
             setImages([]);
+            setHideFromGallery(false);
             setOpen(false);
         } catch (error) {
             alert('Gagal menyimpan memori ke database!');
@@ -206,6 +215,18 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/25 text-base sm:text-sm focus:outline-none focus:ring-1 focus:ring-white/40 focus:border-white/30 transition resize-none"
                                     />
                                 </div>
+
+                                {images.length > 0 && (
+                                    <label className="flex items-center gap-2 cursor-pointer mt-2 text-sm text-white/70 hover:text-white transition">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={hideFromGallery}
+                                            onChange={(e) => setHideFromGallery(e.target.checked)}
+                                            className="rounded border-white/20 bg-white/5 text-white/50 focus:ring-white/30"
+                                        />
+                                        Hide these photos from Gallery
+                                    </label>
+                                )}
 
                                 <motion.button
                                     type="submit"

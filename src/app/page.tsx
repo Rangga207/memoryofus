@@ -40,6 +40,8 @@ export default function HomePage() {
         : memories;
         
     return sourceMemories.flatMap(m => {
+      if (m.hideFromGallery) return [];
+
       if (m.imageUrls && m.imageUrls.length > 0) {
         return m.imageUrls.map((url, idx) => ({ url, memoryId: m.id, imageIndex: idx }));
       }
@@ -76,7 +78,7 @@ export default function HomePage() {
     setIsAuthenticated(true);
   };
 
-  const handleAdd = async (memoryData: { title: string; content: string; imageUrl?: string; imageUrls?: string[] }) => {
+  const handleAdd = async (memoryData: { title: string; content: string; imageUrl?: string; imageUrls?: string[]; isGalleryOnly?: boolean; hideFromGallery?: boolean }) => {
     const newMemory = await addMemory(memoryData);
     setMemories((prev) => [newMemory, ...prev]);
   };
@@ -149,15 +151,25 @@ export default function HomePage() {
                 reader.readAsDataURL(file);
             });
         };
-        const newBase64Images = await Promise.all(files.map(processImage));
+        const newBase64Images: string[] = [];
+        for (const file of files) {
+            try {
+                const dataUrl = await processImage(file);
+                newBase64Images.push(dataUrl);
+            } catch (e) {
+                console.error("Failed to process gallery image", e);
+            }
+        }
         
-        await handleAdd({
-            title: 'Gallery Upload',
-            content: '',
-            imageUrl: newBase64Images[0],
-            imageUrls: newBase64Images,
-            isGalleryOnly: true
-        });
+        if (newBase64Images.length > 0) {
+            await handleAdd({
+                title: 'Gallery Upload',
+                content: '',
+                imageUrl: newBase64Images[0],
+                imageUrls: newBase64Images,
+                isGalleryOnly: true
+            });
+        }
     } finally {
         setIsUploadingGallery(false);
         event.target.value = '';
@@ -343,6 +355,18 @@ export default function HomePage() {
                         >
                           <img src={imgData.url} alt="Gallery" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
+                          <button
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm('Are you sure you want to delete this photo?')) {
+                                      handleDeleteGalleryImage(imgData.memoryId, imgData.imageIndex);
+                                  }
+                              }}
+                              className="absolute top-2 right-2 p-1.5 bg-black/50 text-white/70 hover:text-red-400 hover:bg-black/80 rounded-full backdrop-blur-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all z-10"
+                              aria-label="Delete from gallery"
+                          >
+                              <Trash2 size={14} />
+                          </button>
                         </motion.div>
                       ))
                     )}

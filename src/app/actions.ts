@@ -19,6 +19,7 @@ export interface Memory {
     imageUrl?: string;
     imageUrls?: string[];
     isGalleryOnly?: boolean;
+    hideFromGallery?: boolean;
 }
 
 const dbPath = path.join(process.cwd(), 'database.json');
@@ -86,7 +87,7 @@ export async function getMemories() {
     return await getDb();
 }
 
-export async function addMemory(data: { title: string; content: string; imageUrl?: string; imageUrls?: string[]; isGalleryOnly?: boolean }) {
+export async function addMemory(data: { title: string; content: string; imageUrl?: string; imageUrls?: string[]; isGalleryOnly?: boolean; hideFromGallery?: boolean }) {
     const memories = await getDb();
     
     const newMemory: Memory = {
@@ -98,6 +99,7 @@ export async function addMemory(data: { title: string; content: string; imageUrl
         imageUrl: data.imageUrl,
         imageUrls: data.imageUrls,
         isGalleryOnly: data.isGalleryOnly,
+        hideFromGallery: data.hideFromGallery,
         date: new Date().toLocaleDateString('id-ID', {
             day: 'numeric',
             month: 'long',

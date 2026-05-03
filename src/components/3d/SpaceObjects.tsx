@@ -33,7 +33,7 @@ function OrbitingMercury() {
         <group>
             {/* The massive planet close-up.
                 Placed at bottom-right, creating a gorgeous massive crescent flyby look */}
-            <Sphere ref={planetRef} args={[radius, 128, 128]} position={[posX, posY, -30]}>
+            <Sphere ref={planetRef} args={[radius, 64, 64]} position={[posX, posY, -30]}>
                 <meshStandardMaterial
                     map={texture}
                     bumpMap={texture}
@@ -77,7 +77,7 @@ function OrbitingMercury() {
             </Sphere>
 
             {/* Cinematic Multilayered Atmospheric Glow to hide hard polygon edges */}
-            <Sphere args={[radius + 0.2, 128, 128]} position={[posX, posY, -30]}>
+            <Sphere args={[radius + 0.2, 64, 64]} position={[posX, posY, -30]}>
                 <meshBasicMaterial
                     color="#60a5fa"
                     transparent
@@ -87,7 +87,7 @@ function OrbitingMercury() {
                     depthWrite={false}
                 />
             </Sphere>
-            <Sphere args={[radius + 0.6, 64, 64]} position={[posX, posY, -30]}>
+            <Sphere args={[radius + 0.6, 32, 32]} position={[posX, posY, -30]}>
                 <meshBasicMaterial
                     color="#1e3a8a"
                     transparent
