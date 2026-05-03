@@ -13,6 +13,8 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
     const [content, setContent] = useState('');
     const [images, setImages] = useState<string[]>([]);
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
@@ -65,8 +67,9 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title.trim() || !content.trim()) return;
+        if (!title.trim() || !content.trim() || isSubmitting) return;
         
+        setIsSubmitting(true);
         try {
             await onAdd({ 
                 title, 
@@ -80,6 +83,8 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
             setOpen(false);
         } catch (error) {
             alert('Gagal menyimpan memori ke database!');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -204,11 +209,16 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
 
                                 <motion.button
                                     type="submit"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white font-medium text-sm shadow-lg shadow-black/20 hover:bg-white/20 transition-all font-sans"
+                                    disabled={isSubmitting}
+                                    whileHover={!isSubmitting ? { scale: 1.02 } : {}}
+                                    whileTap={!isSubmitting ? { scale: 0.98 } : {}}
+                                    className={`w-full py-3 rounded-xl border font-medium text-sm transition-all font-sans ${
+                                        isSubmitting 
+                                            ? 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed'
+                                            : 'bg-white/10 border-white/20 text-white shadow-lg shadow-black/20 hover:bg-white/20'
+                                    }`}
                                 >
-                                    Save Memory
+                                    {isSubmitting ? 'Saving...' : 'Save Memory'}
                                 </motion.button>
                             </form>
                         </motion.div>
