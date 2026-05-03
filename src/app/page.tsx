@@ -185,7 +185,7 @@ export default function HomePage() {
 
       {/* Radial gradient vignette overlay */}
       <div
-        className="fixed inset-0 -z-10 pointer-events-none"
+        className="fixed top-0 left-0 w-screen h-screen -z-10 pointer-events-none"
         style={{
           background:
             'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.85) 100%)',

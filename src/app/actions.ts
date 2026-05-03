@@ -33,14 +33,33 @@ async function getDb(): Promise<Memory[]> {
     
     if (kvUrl && kvToken) {
         try {
-            const res = await fetch(`${kvUrl}/get/memories`, {
-                headers: { Authorization: `Bearer ${kvToken}` },
-                cache: 'no-store'
-            });
-            const json = await res.json();
-            if (json.result) {
-                const data = typeof json.result === 'string' ? JSON.parse(json.result) : json.result;
-                return Array.isArray(data) ? data : [];
+            const headers = { Authorization: `Bearer ${kvToken}` };
+            
+            // First check if we are using the new chunked format
+            const countRes = await fetch(`${kvUrl}/get/memories_count`, { headers, cache: 'no-store' });
+            const countJson = await countRes.json();
+            const count = parseInt(countJson.result);
+            
+            if (!isNaN(count) && count > 0) {
+                // Fetch all chunks concurrently!
+                const promises = Array.from({length: count}, (_, i) => 
+                    fetch(`${kvUrl}/get/memories_chunk_${i}`, { headers, cache: 'no-store' }).then(r => r.json())
+                );
+                const results = await Promise.all(promises);
+                const fullJsonStr = results.map(r => r.result).join('');
+                
+                if (fullJsonStr) {
+                    const data = JSON.parse(fullJsonStr);
+                    return Array.isArray(data) ? data : [];
+                }
+            } else {
+                // Fallback to legacy single-key format if chunked doesn't exist
+                const res = await fetch(`${kvUrl}/get/memories`, { headers, cache: 'no-store' });
+                const json = await res.json();
+                if (json.result) {
+                    const data = typeof json.result === 'string' ? JSON.parse(json.result) : json.result;
+                    return Array.isArray(data) ? data : [];
+                }
             }
             return [];
         } catch (e) {
@@ -53,7 +72,6 @@ async function getDb(): Promise<Memory[]> {
         const data = await fs.readFile(dbPath, 'utf8');
         return JSON.parse(data);
     } catch {
-        // If file doesn't exist or is invalid, return empty array
         return [];
     }
 }
@@ -65,17 +83,46 @@ async function saveDb(memories: Memory[]) {
 
     if (kvUrl && kvToken) {
         try {
-            await fetch(`${kvUrl}/set/memories`, {
+            const headers = { 
+                Authorization: `Bearer ${kvToken}`,
+                'Content-Type': 'application/json'
+            };
+            
+            const jsonStr = JSON.stringify(memories);
+            // Chunk string into 500KB pieces (safely under 1MB request/response limit)
+            const chunkSize = 500000;
+            const chunks: string[] = [];
+            for (let i = 0; i < jsonStr.length; i += chunkSize) {
+                chunks.push(jsonStr.substring(i, i + chunkSize));
+            }
+            
+            // 1. Save the chunk count
+            const countRes = await fetch(`${kvUrl}/set/memories_count`, {
                 method: 'POST',
-                headers: { 
-                    Authorization: `Bearer ${kvToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(memories)
+                headers,
+                body: chunks.length.toString()
             });
+            
+            if (!countRes.ok) {
+                throw new Error(`Failed to set count: ${await countRes.text()}`);
+            }
+
+            // 2. Save each chunk sequentially to avoid rate limiting and ensure completion
+            for (let i = 0; i < chunks.length; i++) {
+                const chunkRes = await fetch(`${kvUrl}/set/memories_chunk_${i}`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(chunks[i])
+                });
+                if (!chunkRes.ok) {
+                    throw new Error(`Failed to set chunk ${i}: ${await chunkRes.text()}`);
+                }
+            }
+            
             return;
         } catch (e) {
             console.error("Vercel KV Write Error:", e);
+            throw e; // Throw so the UI can catch it!
         }
     }
 
