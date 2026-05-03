@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Image as ImageIcon, LayoutGrid, Sparkles, CalendarDays, Heart, Clock, X } from 'lucide-react';
+import { Search, Image as ImageIcon, LayoutGrid, Sparkles, CalendarDays, Heart, Clock, X, Trash2, Upload } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { MemoryCard } from '@/components/ui/MemoryCard';
 import AddMemoryModal from '@/components/ui/AddMemoryModal';
@@ -22,25 +22,33 @@ export default function HomePage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'memories' | 'gallery'>('memories');
-  const [fullGalleryImage, setFullGalleryImage] = useState<string | null>(null);
+  const [fullGalleryImage, setFullGalleryImage] = useState<{url: string, memoryId: string, imageIndex: number} | null>(null);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
 
   const filteredMemories = useMemo(() => {
     return memories.filter(m =>
-      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      !m.isGalleryOnly &&
+      (m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.date.toLowerCase().includes(searchQuery.toLowerCase())
+      m.date.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [memories, searchQuery]);
 
   const allImages = useMemo(() => {
-    return filteredMemories.flatMap(m => {
-      // If imageUrls is present, it contains all images including the first one (imageUrl)
-      // So we only return imageUrls if it exists, otherwise just the single imageUrl
-      if (m.imageUrls && m.imageUrls.length > 0) return m.imageUrls;
-      if (m.imageUrl) return [m.imageUrl];
+    const sourceMemories = searchQuery 
+        ? memories.filter(m => m.title.toLowerCase().includes(searchQuery.toLowerCase()) || m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+        : memories;
+        
+    return sourceMemories.flatMap(m => {
+      if (m.imageUrls && m.imageUrls.length > 0) {
+        return m.imageUrls.map((url, idx) => ({ url, memoryId: m.id, imageIndex: idx }));
+      }
+      if (m.imageUrl) {
+        return [{ url: m.imageUrl, memoryId: m.id, imageIndex: 0 }];
+      }
       return [];
     });
-  }, [filteredMemories]);
+  }, [memories, searchQuery]);
 
   useEffect(() => {
     const auth = localStorage.getItem('memory_auth');
@@ -92,6 +100,67 @@ export default function HomePage() {
     if (updatedMemory) {
       // Ensure state exactly matches the server returned object
       setMemories((prev) => prev.map((m) => m.id === id ? updatedMemory : m));
+    }
+  };
+
+  const handleDeleteGalleryImage = async (memoryId: string, imageIndex: number) => {
+    const memory = memories.find(m => m.id === memoryId);
+    if (!memory) return;
+    
+    if (memory.isGalleryOnly && (memory.imageUrls?.length === 1 || !memory.imageUrls)) {
+       await handleDelete(memoryId);
+    } else {
+       const newImageUrls = memory.imageUrls ? [...memory.imageUrls] : (memory.imageUrl ? [memory.imageUrl] : []);
+       newImageUrls.splice(imageIndex, 1);
+       
+       const updates: Partial<Memory> = {
+         imageUrls: newImageUrls.length > 0 ? newImageUrls : undefined,
+         imageUrl: newImageUrls.length > 0 ? newImageUrls[0] : undefined
+       };
+       await handleUpdate(memoryId, updates);
+    }
+    setFullGalleryImage(null);
+  };
+
+  const handleGalleryUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+    
+    setIsUploadingGallery(true);
+    try {
+        const processImage = (file: File): Promise<string> => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'medium'; ctx.drawImage(img, 0, 0, width, height); }
+                        resolve(canvas.toDataURL('image/jpeg', 0.8));
+                    };
+                    img.src = e.target?.result as string;
+                };
+                reader.readAsDataURL(file);
+            });
+        };
+        const newBase64Images = await Promise.all(files.map(processImage));
+        
+        await handleAdd({
+            title: 'Gallery Upload',
+            content: '',
+            imageUrl: newBase64Images[0],
+            imageUrls: newBase64Images,
+            isGalleryOnly: true
+        });
+    } finally {
+        setIsUploadingGallery(false);
+        event.target.value = '';
     }
   };
 
@@ -236,27 +305,48 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
-                  className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
                 >
-                  {allImages.length === 0 ? (
-                    <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
-                      <p className="text-white/40 text-sm">No images found.</p>
-                    </div>
-                  ) : (
-                    allImages.map((img, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: Math.min(i * 0.05, 0.5) }}
-                        className="aspect-square rounded-xl overflow-hidden border border-white/10 group cursor-pointer relative"
-                        onClick={() => setFullGalleryImage(img)}
-                      >
-                        <img src={img} alt="Gallery" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
-                      </motion.div>
-                    ))
-                  )}
+                  <div className="flex justify-between items-end mb-4 px-1">
+                    <p className="text-white/40 text-sm">{allImages.length} photos</p>
+                    <label className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        isUploadingGallery 
+                            ? 'bg-white/5 text-white/30 cursor-not-allowed' 
+                            : 'bg-white/10 hover:bg-white/20 text-white shadow-lg'
+                    }`}>
+                        <Upload size={14} />
+                        {isUploadingGallery ? 'Uploading...' : 'Upload Photos'}
+                        <input 
+                            type="file" 
+                            accept="image/*" 
+                            multiple 
+                            className="hidden" 
+                            disabled={isUploadingGallery}
+                            onChange={handleGalleryUpload} 
+                        />
+                    </label>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {allImages.length === 0 ? (
+                      <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
+                        <p className="text-white/40 text-sm">No images found.</p>
+                      </div>
+                    ) : (
+                      allImages.map((imgData, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: Math.min(i * 0.05, 0.5) }}
+                          className="aspect-square rounded-xl overflow-hidden border border-white/10 group cursor-pointer relative"
+                          onClick={() => setFullGalleryImage(imgData)}
+                        >
+                          <img src={imgData.url} alt="Gallery" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -290,14 +380,26 @@ export default function HomePage() {
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.9, opacity: 0 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="relative w-full h-full p-4 sm:p-8 flex items-center justify-center"
+                  className="relative w-full h-full p-4 sm:p-8 flex flex-col items-center justify-center"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <img
-                    src={fullGalleryImage}
+                    src={fullGalleryImage.url}
                     alt="Gallery Full Size"
-                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default"
-                    onClick={(e) => e.stopPropagation()}
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default mb-4"
                   />
+                  <button
+                    onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if (confirm('Are you sure you want to delete this photo?')) {
+                            handleDeleteGalleryImage(fullGalleryImage.memoryId, fullGalleryImage.imageIndex);
+                        }
+                    }}
+                    className="bg-red-500/20 hover:bg-red-500/40 text-red-100 border border-red-500/30 backdrop-blur-md px-6 py-2.5 rounded-full transition-all flex items-center gap-2 shadow-lg"
+                  >
+                    <Trash2 size={16} />
+                    <span className="text-sm font-medium">Delete Photo</span>
+                  </button>
                 </motion.div>
               </motion.div>
             )}
