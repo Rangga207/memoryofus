@@ -26,7 +26,7 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 1920; // Increased for HD quality
+                        const MAX_WIDTH = 800; // Decreased to save database size limits
                         let width = img.width;
                         let height = img.height;
 
@@ -42,12 +42,12 @@ export default function AddMemoryModal({ onAdd }: AddMemoryModalProps) {
                         // Use better interpolation if supported (mostly for scaling down)
                         if (ctx) {
                             ctx.imageSmoothingEnabled = true;
-                            ctx.imageSmoothingQuality = 'high';
+                            ctx.imageSmoothingQuality = 'medium';
                             ctx.drawImage(img, 0, 0, width, height);
                         }
 
-                        // Increased quality to 0.9 (90%) for HD appearance
-                        resolve(canvas.toDataURL('image/jpeg', 0.9));
+                        // Compressed to 0.8 to balance quality and size
+                        resolve(canvas.toDataURL('image/jpeg', 0.8));
                     };
                     img.src = event.target?.result as string;
                 };
