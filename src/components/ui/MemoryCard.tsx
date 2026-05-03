@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, Calendar, Maximize2 } from 'lucide-react';
+import { X, Trash2, Calendar, Maximize2, ImagePlus } from 'lucide-react';
 import { type Memory } from '@/app/actions';
 
 export const CARD_COLORS = [
@@ -180,6 +180,66 @@ export function MemoryCard({ memory, index, onDelete, onUpdate, isInitialLoad = 
                             <div className="flex items-center gap-1.5 mt-5 pt-4 border-t border-white/10">
                                 <Calendar size={12} className="text-white/40" />
                                 <span className="text-white/40 text-xs">{memory.date}</span>
+                                <div className="flex-1" />
+                                <label className="cursor-pointer flex items-center gap-1.5 text-white/50 hover:text-white/90 transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
+                                    <ImagePlus size={12} />
+                                    <span>Add Photo</span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        multiple 
+                                        className="hidden" 
+                                        onChange={async (event) => {
+                                            const files = Array.from(event.target.files || []);
+                                            if (files.length === 0) return;
+
+                                            const processImage = (file: File): Promise<string> => {
+                                                return new Promise((resolve) => {
+                                                    const reader = new FileReader();
+                                                    reader.onload = (e) => {
+                                                        const img = new Image();
+                                                        img.onload = () => {
+                                                            const canvas = document.createElement('canvas');
+                                                            const MAX_WIDTH = 800;
+                                                            let width = img.width;
+                                                            let height = img.height;
+
+                                                            if (width > MAX_WIDTH) {
+                                                                height = Math.round((height * MAX_WIDTH) / width);
+                                                                width = MAX_WIDTH;
+                                                            }
+
+                                                            canvas.width = width;
+                                                            canvas.height = height;
+                                                            const ctx = canvas.getContext('2d');
+                                                            
+                                                            if (ctx) {
+                                                                ctx.imageSmoothingEnabled = true;
+                                                                ctx.imageSmoothingQuality = 'medium';
+                                                                ctx.drawImage(img, 0, 0, width, height);
+                                                            }
+
+                                                            resolve(canvas.toDataURL('image/jpeg', 0.8));
+                                                        };
+                                                        img.src = e.target?.result as string;
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                });
+                                            };
+
+                                            const newBase64Images = await Promise.all(files.map(processImage));
+                                            const updatedImageUrls = [...allImages, ...newBase64Images];
+                                            
+                                            onUpdate?.(memory.id, { 
+                                                imageUrls: updatedImageUrls, 
+                                                imageUrl: updatedImageUrls[0] 
+                                            });
+                                            
+                                            // Reset input
+                                            event.target.value = '';
+                                        }} 
+                                    />
+                                </label>
                             </div>
                         </motion.div>
                     </motion.div>

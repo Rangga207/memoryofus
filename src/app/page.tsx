@@ -33,10 +33,11 @@ export default function HomePage() {
 
   const allImages = useMemo(() => {
     return filteredMemories.flatMap(m => {
-      const imgs = [];
-      if (m.imageUrl) imgs.push(m.imageUrl);
-      if (m.imageUrls) imgs.push(...m.imageUrls);
-      return imgs;
+      // If imageUrls is present, it contains all images including the first one (imageUrl)
+      // So we only return imageUrls if it exists, otherwise just the single imageUrl
+      if (m.imageUrls && m.imageUrls.length > 0) return m.imageUrls;
+      if (m.imageUrl) return [m.imageUrl];
+      return [];
     });
   }, [filteredMemories]);
 
